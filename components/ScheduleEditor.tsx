@@ -9,6 +9,7 @@ import {
 } from "@/app/trip/[slug]/actions";
 import { formatDateJa, formatTime } from "@/lib/date";
 import CommentSection from "./CommentSection";
+import LocationMap from "./LocationMap";
 
 type Props = {
   slug: string;
@@ -179,6 +180,7 @@ function ScheduleRow({
 
       {open && (
         <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
+          {item.location && <LocationMap location={item.location} />}
           {item.memo && (
             <p className="whitespace-pre-wrap text-sm text-gray-700">
               {item.memo}
