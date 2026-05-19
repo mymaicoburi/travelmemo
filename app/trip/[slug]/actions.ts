@@ -224,6 +224,69 @@ export async function updateScheduleItem(
   revalidatePath(`/trip/${slug}`);
 }
 
+export type ParsedReservation = {
+  title: string;
+  day: string;
+  start_time: string | null;
+  location: string | null;
+  memo: string | null;
+};
+
+export async function addParsedReservations(
+  slug: string,
+  items: ParsedReservation[]
+) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("追加する予定がありません。");
+  }
+  for (const it of items) {
+    if (!it.title?.trim() || !it.day?.trim()) {
+      throw new Error("タイトルと日付は必須です。");
+    }
+  }
+
+  const trip_id = await getTripIdBySlug(slug);
+  const supabase = getSupabaseAdmin();
+
+  const authorName = await getAuthorName();
+  const authorMemberId = await ensureMember(supabase, trip_id, authorName);
+
+  for (const it of items) {
+    const day = it.day.trim();
+    const { data: max } = await supabase
+      .from("schedule_items")
+      .select("sort_order")
+      .eq("trip_id", trip_id)
+      .eq("day", day)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextSort = (max?.sort_order ?? -1) + 1;
+
+    const { data: newItem, error } = await supabase
+      .from("schedule_items")
+      .insert({
+        trip_id,
+        day,
+        start_time: it.start_time?.trim() || null,
+        title: it.title.trim(),
+        location: it.location?.trim() || null,
+        memo: it.memo?.trim() || null,
+        sort_order: nextSort,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+
+    const { error: pErr } = await supabase
+      .from("schedule_participants")
+      .insert({ schedule_item_id: newItem.id, member_id: authorMemberId });
+    if (pErr) throw new Error(pErr.message);
+  }
+
+  revalidatePath(`/trip/${slug}`);
+}
+
 export async function deleteScheduleItem(slug: string, itemId: string) {
   const trip_id = await getTripIdBySlug(slug);
   const supabase = getSupabaseAdmin();

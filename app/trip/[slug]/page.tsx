@@ -15,6 +15,7 @@ import TripHeader from "@/components/TripHeader";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import CommentSection from "@/components/CommentSection";
 import VisitRecorder from "@/components/VisitRecorder";
+import ParseEmailModal from "@/components/ParseEmailModal";
 import { ensureCurrentMember } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -46,9 +47,11 @@ export default async function TripPage({ params }: Props) {
       .from("schedule_items")
       .select("*")
       .eq("trip_id", trip.id)
+      // 日付 → 開始時刻 → (同時刻時の) 作成順、で並べる。
+      // 開始時刻が未設定 (null) の予定はその日の最後に表示。
       .order("day", { ascending: true })
-      .order("sort_order", { ascending: true })
-      .order("start_time", { ascending: true, nullsFirst: false }),
+      .order("start_time", { ascending: true, nullsFirst: false })
+      .order("sort_order", { ascending: true }),
     supabase
       .from("comments")
       .select("*")
@@ -98,6 +101,8 @@ export default async function TripPage({ params }: Props) {
       </div>
 
       <TripHeader trip={tripTyped} members={membersTyped} />
+
+      <ParseEmailModal slug={tripTyped.slug} />
 
       <ScheduleEditor
         slug={tripTyped.slug}

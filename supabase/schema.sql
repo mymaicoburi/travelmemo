@@ -26,7 +26,7 @@ create table if not exists schedule_items (
 );
 
 create index if not exists schedule_items_trip_day_idx
-  on schedule_items (trip_id, day, sort_order, start_time);
+  on schedule_items (trip_id, day, start_time, sort_order);
 
 create table if not exists comments (
   id uuid primary key default gen_random_uuid(),
