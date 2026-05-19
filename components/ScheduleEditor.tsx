@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import type { ScheduleItem, Comment } from "@/lib/types";
+import { useMemo, useState, useTransition } from "react";
+import type {
+  ScheduleItem,
+  Comment,
+  TripMember,
+  ScheduleParticipant,
+} from "@/lib/types";
 import {
   addScheduleItem,
   deleteScheduleItem,
@@ -16,6 +21,9 @@ type Props = {
   days: string[];
   items: ScheduleItem[];
   comments: Comment[];
+  members: TripMember[];
+  participants: ScheduleParticipant[];
+  currentAuthorName: string;
 };
 
 export default function ScheduleEditor({
@@ -23,8 +31,27 @@ export default function ScheduleEditor({
   days,
   items,
   comments,
+  members,
+  participants,
+  currentAuthorName,
 }: Props) {
   const grouped = groupByDay(items, days);
+
+  // 予定ID -> その予定の参加メンバーID集合
+  const participantMap = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const p of participants) {
+      if (!m.has(p.schedule_item_id)) m.set(p.schedule_item_id, new Set());
+      m.get(p.schedule_item_id)!.add(p.member_id);
+    }
+    return m;
+  }, [participants]);
+
+  // 現在ユーザーの member_id (新規作成時のデフォルト選択用)
+  const currentMemberId = useMemo(
+    () => members.find((m) => m.name === currentAuthorName)?.id ?? null,
+    [members, currentAuthorName]
+  );
 
   return (
     <section className="mt-6">
@@ -43,11 +70,18 @@ export default function ScheduleEditor({
             day={day}
             items={dayItems}
             comments={comments}
+            members={members}
+            participantMap={participantMap}
           />
         ))}
       </div>
 
-      <AddItemForm slug={slug} defaultDay={days[0] ?? ""} />
+      <AddItemForm
+        slug={slug}
+        defaultDay={days[0] ?? ""}
+        members={members}
+        defaultSelectedMemberId={currentMemberId}
+      />
     </section>
   );
 }
@@ -68,11 +102,15 @@ function DaySection({
   day,
   items,
   comments,
+  members,
+  participantMap,
 }: {
   slug: string;
   day: string;
   items: ScheduleItem[];
   comments: Comment[];
+  members: TripMember[];
+  participantMap: Map<string, Set<string>>;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
@@ -93,6 +131,8 @@ function DaySection({
               itemComments={comments.filter(
                 (c) => c.schedule_item_id === item.id
               )}
+              members={members}
+              selectedMemberIds={participantMap.get(item.id) ?? new Set()}
             />
           ))}
         </ul>
@@ -105,14 +145,22 @@ function ScheduleRow({
   slug,
   item,
   itemComments,
+  members,
+  selectedMemberIds,
 }: {
   slug: string;
   item: ScheduleItem;
   itemComments: Comment[];
+  members: TripMember[];
+  selectedMemberIds: Set<string>;
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const participantMembers = members.filter((m) =>
+    selectedMemberIds.has(m.id)
+  );
 
   const onDelete = () => {
     if (!confirm(`「${item.title}」を削除しますか？`)) return;
@@ -141,7 +189,13 @@ function ScheduleRow({
   if (editing) {
     return (
       <li className="p-4">
-        <ItemFields onSubmit={onSave} item={item} pending={pending}>
+        <ItemFields
+          onSubmit={onSave}
+          item={item}
+          members={members}
+          selectedMemberIds={selectedMemberIds}
+          pending={pending}
+        >
           <button
             type="button"
             onClick={() => setEditing(false)}
@@ -168,6 +222,18 @@ function ScheduleRow({
           {item.location && (
             <span className="mt-0.5 block text-xs text-gray-500">
               📍 {item.location}
+            </span>
+          )}
+          {participantMembers.length > 0 && (
+            <span className="mt-1 flex flex-wrap gap-1">
+              {participantMembers.map((m) => (
+                <span
+                  key={m.id}
+                  className="rounded-full bg-brand/10 px-2 py-0.5 text-[11px] text-brand"
+                >
+                  {m.name}
+                </span>
+              ))}
             </span>
           )}
         </span>
@@ -216,9 +282,13 @@ function ScheduleRow({
 function AddItemForm({
   slug,
   defaultDay,
+  members,
+  defaultSelectedMemberId,
 }: {
   slug: string;
   defaultDay: string;
+  members: TripMember[];
+  defaultSelectedMemberId: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -233,6 +303,9 @@ function AddItemForm({
       </button>
     );
   }
+
+  const defaultSelected = new Set<string>();
+  if (defaultSelectedMemberId) defaultSelected.add(defaultSelectedMemberId);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -260,6 +333,8 @@ function AddItemForm({
           location: "",
           memo: "",
         }}
+        members={members}
+        selectedMemberIds={defaultSelected}
         pending={pending}
       >
         <button
@@ -285,14 +360,31 @@ type ItemFieldsData = {
 function ItemFields({
   onSubmit,
   item,
+  members,
+  selectedMemberIds,
   pending,
   children,
 }: {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   item: ItemFieldsData;
+  members: TripMember[];
+  selectedMemberIds: Set<string>;
   pending: boolean;
   children?: React.ReactNode;
 }) {
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(selectedMemberIds)
+  );
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   return (
     <form onSubmit={onSubmit} className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
@@ -330,6 +422,37 @@ function ItemFields({
         placeholder="メモ (任意)"
         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
       />
+
+      {members.length > 0 && (
+        <div className="pt-1">
+          <p className="mb-1.5 text-xs text-gray-500">参加メンバー</p>
+          <div className="flex flex-wrap gap-1.5">
+            {members.map((m) => {
+              const on = selected.has(m.id);
+              return (
+                <button
+                  type="button"
+                  key={m.id}
+                  onClick={() => toggle(m.id)}
+                  className={
+                    "rounded-full px-3 py-1 text-xs transition-colors " +
+                    (on
+                      ? "bg-brand text-white"
+                      : "border border-gray-300 bg-white text-gray-600 hover:bg-gray-50")
+                  }
+                >
+                  {on ? "✓ " : ""}
+                  {m.name}
+                </button>
+              );
+            })}
+          </div>
+          {Array.from(selected).map((id) => (
+            <input key={id} type="hidden" name="member_ids" value={id} />
+          ))}
+        </div>
+      )}
+
       <div className="flex gap-2 pt-1">
         <button
           type="submit"

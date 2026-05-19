@@ -4,8 +4,10 @@ import { useState, useTransition } from "react";
 import { setAuthorName } from "@/app/trip/[slug]/actions";
 
 export default function AuthorNameGate({
+  slug,
   initialName,
 }: {
+  slug: string;
   initialName: string;
 }) {
   const [open, setOpen] = useState(!initialName);
@@ -18,7 +20,7 @@ export default function AuthorNameGate({
     e.preventDefault();
     if (!name.trim()) return;
     startTransition(async () => {
-      await setAuthorName(name.trim());
+      await setAuthorName(slug, name.trim());
       setOpen(false);
       // 反映のため再読み込み
       if (typeof window !== "undefined") window.location.reload();

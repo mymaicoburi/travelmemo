@@ -1,14 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import type { Trip, ScheduleItem, Comment } from "@/lib/types";
+import type {
+  Trip,
+  ScheduleItem,
+  Comment,
+  TripMember,
+  ScheduleParticipant,
+} from "@/lib/types";
 import { enumerateDates, formatRange } from "@/lib/date";
 import AuthorNameGate from "@/components/AuthorNameGate";
 import TripHeader from "@/components/TripHeader";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import CommentSection from "@/components/CommentSection";
 import VisitRecorder from "@/components/VisitRecorder";
-import { cookies } from "next/headers";
+import { ensureCurrentMember } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +33,15 @@ export default async function TripPage({ params }: Props) {
   if (tripErr) throw new Error(tripErr.message);
   if (!trip) notFound();
 
-  const [{ data: items }, { data: comments }] = await Promise.all([
+  // クッキーに名前があれば、この旅行のメンバーとして自動登録 (重複は無視)
+  await ensureCurrentMember(slug);
+
+  const [
+    { data: items },
+    { data: comments },
+    { data: members },
+    { data: participants },
+  ] = await Promise.all([
     supabase
       .from("schedule_items")
       .select("*")
@@ -39,11 +54,27 @@ export default async function TripPage({ params }: Props) {
       .select("*")
       .eq("trip_id", trip.id)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("trip_members")
+      .select("*")
+      .eq("trip_id", trip.id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("schedule_participants")
+      .select("schedule_item_id, member_id, trip_members!inner(trip_id)")
+      .eq("trip_members.trip_id", trip.id),
   ]);
 
   const tripTyped = trip as Trip;
   const itemsTyped = (items ?? []) as ScheduleItem[];
   const commentsTyped = (comments ?? []) as Comment[];
+  const membersTyped = (members ?? []) as TripMember[];
+  const participantsTyped = ((participants ?? []) as Array<
+    ScheduleParticipant & { trip_members?: unknown }
+  >).map(({ schedule_item_id, member_id }) => ({
+    schedule_item_id,
+    member_id,
+  })) as ScheduleParticipant[];
 
   const days = computeDays(tripTyped, itemsTyped);
 
@@ -54,7 +85,7 @@ export default async function TripPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <AuthorNameGate initialName={initialAuthor} />
+      <AuthorNameGate slug={tripTyped.slug} initialName={initialAuthor} />
       <VisitRecorder slug={tripTyped.slug} title={tripTyped.title} />
 
       <div className="mb-4 flex items-center justify-between text-sm">
@@ -66,13 +97,16 @@ export default async function TripPage({ params }: Props) {
         </span>
       </div>
 
-      <TripHeader trip={tripTyped} />
+      <TripHeader trip={tripTyped} members={membersTyped} />
 
       <ScheduleEditor
         slug={tripTyped.slug}
         days={days}
         items={itemsTyped}
         comments={commentsTyped}
+        members={membersTyped}
+        participants={participantsTyped}
+        currentAuthorName={initialAuthor}
       />
 
       <section className="mt-8">

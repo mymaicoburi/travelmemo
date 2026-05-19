@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { Trip } from "@/lib/types";
+import type { Trip, TripMember } from "@/lib/types";
 import { updateTrip } from "@/app/trip/[slug]/actions";
 
-export default function TripHeader({ trip }: { trip: Trip }) {
+export default function TripHeader({
+  trip,
+  members,
+}: {
+  trip: Trip;
+  members: TripMember[];
+}) {
   const [editing, setEditing] = useState(false);
   const [shared, setShared] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -41,6 +47,19 @@ export default function TripHeader({ trip }: { trip: Trip }) {
           <h1 className="text-xl font-bold">{trip.title}</h1>
           {trip.destination && (
             <p className="mt-1 text-sm text-gray-600">📍 {trip.destination}</p>
+          )}
+          {members.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-gray-500">メンバー:</span>
+              {members.map((m) => (
+                <span
+                  key={m.id}
+                  className="rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand"
+                >
+                  {m.name}
+                </span>
+              ))}
+            </div>
           )}
           <div className="mt-4 flex gap-2">
             <button

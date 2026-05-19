@@ -28,3 +28,15 @@ export type Comment = {
   body: string;
   created_at: string;
 };
+
+export type TripMember = {
+  id: string;
+  trip_id: string;
+  name: string;
+  created_at: string;
+};
+
+export type ScheduleParticipant = {
+  schedule_item_id: string;
+  member_id: string;
+};
