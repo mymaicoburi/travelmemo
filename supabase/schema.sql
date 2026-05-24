@@ -61,6 +61,26 @@ create table if not exists schedule_participants (
   primary key (schedule_item_id, member_id)
 );
 
+-- 予定への画像添付 (実体は Supabase Storage の `attachments` バケット)
+create table if not exists attachments (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references trips(id) on delete cascade,
+  schedule_item_id uuid not null references schedule_items(id) on delete cascade,
+  storage_path text not null,
+  mime_type text not null,
+  size_bytes int,
+  width int,
+  height int,
+  uploaded_by text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists attachments_item_idx
+  on attachments (schedule_item_id, created_at);
+
+create index if not exists attachments_trip_idx
+  on attachments (trip_id);
+
 -- 本アプリでは全 DB アクセスをサーバー側 (service_role) から行うため、
 -- RLS を有効化したうえで一般ユーザー (anon) には何も許可しない。
 alter table trips enable row level security;
@@ -68,9 +88,11 @@ alter table schedule_items enable row level security;
 alter table comments enable row level security;
 alter table trip_members enable row level security;
 alter table schedule_participants enable row level security;
+alter table attachments enable row level security;
 
 -- 新規 Supabase プロジェクトでは public スキーマの service_role への
 -- SELECT/INSERT/UPDATE/DELETE 権限がデフォルトで付与されないため明示的に付与する。
 grant select, insert, update, delete
-  on trips, schedule_items, comments, trip_members, schedule_participants
+  on trips, schedule_items, comments, trip_members,
+     schedule_participants, attachments
   to service_role;

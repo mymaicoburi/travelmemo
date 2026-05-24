@@ -6,6 +6,7 @@ import type {
   Comment,
   TripMember,
   ScheduleParticipant,
+  Attachment,
 } from "@/lib/types";
 import {
   addScheduleItem,
@@ -15,6 +16,7 @@ import {
 import { formatDateJa, formatEnd, formatTime } from "@/lib/date";
 import CommentSection from "./CommentSection";
 import LocationMap from "./LocationMap";
+import AttachmentGallery from "./AttachmentGallery";
 
 type Props = {
   slug: string;
@@ -23,6 +25,7 @@ type Props = {
   comments: Comment[];
   members: TripMember[];
   participants: ScheduleParticipant[];
+  attachments: Attachment[];
   currentAuthorName: string;
 };
 
@@ -33,6 +36,7 @@ export default function ScheduleEditor({
   comments,
   members,
   participants,
+  attachments,
   currentAuthorName,
 }: Props) {
   const grouped = groupByDay(items, days);
@@ -45,6 +49,15 @@ export default function ScheduleEditor({
     }
     return m;
   }, [participants]);
+
+  const attachmentMap = useMemo(() => {
+    const m = new Map<string, Attachment[]>();
+    for (const a of attachments) {
+      if (!m.has(a.schedule_item_id)) m.set(a.schedule_item_id, []);
+      m.get(a.schedule_item_id)!.push(a);
+    }
+    return m;
+  }, [attachments]);
 
   const currentMemberId = useMemo(
     () => members.find((m) => m.name === currentAuthorName)?.id ?? null,
@@ -70,6 +83,7 @@ export default function ScheduleEditor({
             comments={comments}
             members={members}
             participantMap={participantMap}
+            attachmentMap={attachmentMap}
           />
         ))}
       </div>
@@ -102,6 +116,7 @@ function DaySection({
   comments,
   members,
   participantMap,
+  attachmentMap,
 }: {
   slug: string;
   day: string;
@@ -109,6 +124,7 @@ function DaySection({
   comments: Comment[];
   members: TripMember[];
   participantMap: Map<string, Set<string>>;
+  attachmentMap: Map<string, Attachment[]>;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
@@ -131,6 +147,7 @@ function DaySection({
               )}
               members={members}
               selectedMemberIds={participantMap.get(item.id) ?? new Set()}
+              itemAttachments={attachmentMap.get(item.id) ?? []}
             />
           ))}
         </ul>
@@ -145,12 +162,14 @@ function ScheduleRow({
   itemComments,
   members,
   selectedMemberIds,
+  itemAttachments,
 }: {
   slug: string;
   item: ScheduleItem;
   itemComments: Comment[];
   members: TripMember[];
   selectedMemberIds: Set<string>;
+  itemAttachments: Attachment[];
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -259,6 +278,11 @@ function ScheduleRow({
               {item.memo}
             </p>
           )}
+          <AttachmentGallery
+            slug={slug}
+            itemId={item.id}
+            attachments={itemAttachments}
+          />
           <div className="flex gap-2 text-xs">
             <button
               onClick={() => setEditing(true)}

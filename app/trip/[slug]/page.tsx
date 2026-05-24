@@ -8,6 +8,7 @@ import type {
   Comment,
   TripMember,
   ScheduleParticipant,
+  Attachment,
 } from "@/lib/types";
 import { enumerateDates, formatRange } from "@/lib/date";
 import AuthorNameGate from "@/components/AuthorNameGate";
@@ -42,6 +43,7 @@ export default async function TripPage({ params }: Props) {
     { data: comments },
     { data: members },
     { data: participants },
+    { data: attachments },
   ] = await Promise.all([
     supabase
       .from("schedule_items")
@@ -66,6 +68,11 @@ export default async function TripPage({ params }: Props) {
       .from("schedule_participants")
       .select("schedule_item_id, member_id, trip_members!inner(trip_id)")
       .eq("trip_members.trip_id", trip.id),
+    supabase
+      .from("attachments")
+      .select("*")
+      .eq("trip_id", trip.id)
+      .order("created_at", { ascending: true }),
   ]);
 
   const tripTyped = trip as Trip;
@@ -78,6 +85,7 @@ export default async function TripPage({ params }: Props) {
     schedule_item_id,
     member_id,
   })) as ScheduleParticipant[];
+  const attachmentsTyped = (attachments ?? []) as Attachment[];
 
   const days = computeDays(tripTyped, itemsTyped);
 
@@ -115,6 +123,7 @@ export default async function TripPage({ params }: Props) {
         comments={commentsTyped}
         members={membersTyped}
         participants={participantsTyped}
+        attachments={attachmentsTyped}
         currentAuthorName={initialAuthor}
       />
 

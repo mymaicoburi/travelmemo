@@ -299,6 +299,111 @@ export async function addParsedReservations(
   revalidatePath(`/trip/${slug}`);
 }
 
+const ATTACHMENT_BUCKET = "attachments";
+const MAX_ATTACHMENTS_PER_UPLOAD = 10;
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024; // 5MB / file (圧縮後の許容上限)
+
+export async function addAttachments(
+  slug: string,
+  itemId: string,
+  formData: FormData
+) {
+  const files = formData.getAll("files");
+  const widths = formData.getAll("widths").map((v) => Number(v));
+  const heights = formData.getAll("heights").map((v) => Number(v));
+
+  if (files.length === 0) throw new Error("ファイルが選択されていません。");
+  if (files.length > MAX_ATTACHMENTS_PER_UPLOAD) {
+    throw new Error(
+      `1度にアップロードできるのは最大 ${MAX_ATTACHMENTS_PER_UPLOAD} 枚です。`
+    );
+  }
+
+  const trip_id = await getTripIdBySlug(slug);
+  const supabase = getSupabaseAdmin();
+  const authorName = await getAuthorName();
+
+  // 添付先 schedule_item が同じ trip に属するかチェック
+  const { data: item } = await supabase
+    .from("schedule_items")
+    .select("id")
+    .eq("id", itemId)
+    .eq("trip_id", trip_id)
+    .maybeSingle();
+  if (!item) throw new Error("予定が見つかりません。");
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (!(file instanceof File)) continue;
+    if (file.size === 0) continue;
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      throw new Error(
+        `1ファイルあたり ${MAX_ATTACHMENT_BYTES / 1024 / 1024}MB 以下にしてください。`
+      );
+    }
+
+    const uuid = crypto.randomUUID();
+    const path = `${trip_id}/${itemId}/${uuid}.jpg`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    const { error: upErr } = await supabase.storage
+      .from(ATTACHMENT_BUCKET)
+      .upload(path, buffer, {
+        contentType: "image/jpeg",
+        upsert: false,
+      });
+    if (upErr) throw new Error(`アップロード失敗: ${upErr.message}`);
+
+    const { error: insErr } = await supabase.from("attachments").insert({
+      trip_id,
+      schedule_item_id: itemId,
+      storage_path: path,
+      mime_type: "image/jpeg",
+      size_bytes: file.size,
+      width: Number.isFinite(widths[i]) ? widths[i] : null,
+      height: Number.isFinite(heights[i]) ? heights[i] : null,
+      uploaded_by: authorName,
+    });
+    if (insErr) {
+      // 失敗したらストレージ上の孤児を削除
+      await supabase.storage.from(ATTACHMENT_BUCKET).remove([path]);
+      throw new Error(insErr.message);
+    }
+  }
+
+  revalidatePath(`/trip/${slug}`);
+}
+
+export async function deleteAttachment(slug: string, attachmentId: string) {
+  const trip_id = await getTripIdBySlug(slug);
+  const supabase = getSupabaseAdmin();
+
+  const { data: att, error } = await supabase
+    .from("attachments")
+    .select("storage_path")
+    .eq("id", attachmentId)
+    .eq("trip_id", trip_id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!att) return;
+
+  // ストレージ実体を先に削除 (失敗しても DB 行は消す)
+  const { error: storErr } = await supabase.storage
+    .from(ATTACHMENT_BUCKET)
+    .remove([att.storage_path]);
+  if (storErr) {
+    console.warn("ストレージ削除に失敗:", storErr.message);
+  }
+
+  const { error: delErr } = await supabase
+    .from("attachments")
+    .delete()
+    .eq("id", attachmentId);
+  if (delErr) throw new Error(delErr.message);
+
+  revalidatePath(`/trip/${slug}`);
+}
+
 export async function deleteScheduleItem(slug: string, itemId: string) {
   const trip_id = await getTripIdBySlug(slug);
   const supabase = getSupabaseAdmin();

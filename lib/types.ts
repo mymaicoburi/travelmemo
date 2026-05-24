@@ -42,3 +42,16 @@ export type ScheduleParticipant = {
   schedule_item_id: string;
   member_id: string;
 };
+
+export type Attachment = {
+  id: string;
+  trip_id: string;
+  schedule_item_id: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number | null;
+  width: number | null;
+  height: number | null;
+  uploaded_by: string | null;
+  created_at: string;
+};
