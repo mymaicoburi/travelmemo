@@ -115,6 +115,8 @@ export async function updateTrip(slug: string, formData: FormData) {
 export async function addScheduleItem(slug: string, formData: FormData) {
   const day = String(formData.get("day") ?? "").trim();
   const start_time = String(formData.get("start_time") ?? "").trim();
+  const end_date = String(formData.get("end_date") ?? "").trim();
+  const end_time = String(formData.get("end_time") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
   const memo = String(formData.get("memo") ?? "").trim();
@@ -147,6 +149,8 @@ export async function addScheduleItem(slug: string, formData: FormData) {
       trip_id,
       day,
       start_time: start_time || null,
+      end_date: end_date || null,
+      end_time: end_time || null,
       title,
       location: location || null,
       memo: memo || null,
@@ -180,6 +184,8 @@ export async function updateScheduleItem(
 ) {
   const day = String(formData.get("day") ?? "").trim();
   const start_time = String(formData.get("start_time") ?? "").trim();
+  const end_date = String(formData.get("end_date") ?? "").trim();
+  const end_time = String(formData.get("end_time") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
   const memo = String(formData.get("memo") ?? "").trim();
@@ -195,6 +201,8 @@ export async function updateScheduleItem(
     .update({
       day,
       start_time: start_time || null,
+      end_date: end_date || null,
+      end_time: end_time || null,
       title,
       location: location || null,
       memo: memo || null,
@@ -228,6 +236,8 @@ export type ParsedReservation = {
   title: string;
   day: string;
   start_time: string | null;
+  end_date: string | null;
+  end_time: string | null;
   location: string | null;
   memo: string | null;
 };
@@ -269,6 +279,8 @@ export async function addParsedReservations(
         trip_id,
         day,
         start_time: it.start_time?.trim() || null,
+        end_date: it.end_date?.trim() || null,
+        end_time: it.end_time?.trim() || null,
         title: it.title.trim(),
         location: it.location?.trim() || null,
         memo: it.memo?.trim() || null,

@@ -36,3 +36,27 @@ export function formatTime(t: string | null | undefined): string {
   if (!t) return "";
   return t.slice(0, 5);
 }
+
+// 短い日付表記 (例: 6/12)。月日のみで曜日なし。
+export function formatShortDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+// 終了情報を 1 行で表示するための文字列を組み立てる。
+// 同日内: "→ 12:00" / "→ 6/12" / "→ 6/12 11:00" / 終了なし: ""
+export function formatEnd(
+  startDay: string,
+  endDate: string | null | undefined,
+  endTime: string | null | undefined
+): string {
+  if (!endDate && !endTime) return "";
+  const sameDay = !endDate || endDate === startDay;
+  if (sameDay) {
+    return endTime ? `→ ${formatTime(endTime)}` : "";
+  }
+  const datePart = formatShortDate(endDate);
+  return endTime ? `→ ${datePart} ${formatTime(endTime)}` : `→ ${datePart}`;
+}

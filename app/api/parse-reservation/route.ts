@@ -15,10 +15,12 @@ schedule item を組み立てて submit_reservations ツールで返してくだ
 
 抽出ルール:
 - title: 種別 + 便名/列車名 + 区間がわかる形にする。例: "新幹線 のぞみ123号 (東京→新大阪)" / "ANA 057便 (羽田→那覇)" / "宿泊: ホテルABC"
-- day: 当該予定の日付を YYYY-MM-DD 形式で。年が省略されていればメールの送信日や予約日から推測。それでも不明なら今年と仮定。
+- day: 当該予定の開始日 (出発日 / チェックイン日) を YYYY-MM-DD 形式で。年が省略されていればメールの送信日や予約日から推測。それでも不明なら今年と仮定。
 - start_time: 出発時刻 / チェックイン時刻 / 開始時刻を HH:MM (24時間制)。不明なら null。
+- end_date: 終了日 (到着日 / チェックアウト日)。開始日と同じ場合や読み取れない場合は null。宿泊や夜行便などで日付が変わる場合のみ設定。
+- end_time: 終了時刻 (到着時刻 / チェックアウト時刻 / 終了時刻) を HH:MM (24時間制)。不明なら null。
 - location: 出発地点や場所。例: "東京駅 23番ホーム" / "羽田空港 第2ターミナル"。不明なら null。
-- memo: 補足情報をまとめて 1 つの文字列に。号車・座席番号・予約番号・到着駅・到着時刻・キャンセル期限など、後で見返したい情報を箇条書き風に。
+- memo: 補足情報をまとめて 1 つの文字列に。号車・座席番号・予約番号・キャンセル期限など、後で見返したい情報を箇条書き風に。到着駅・到着時刻は end_time / end_date に入れたので memo に重複させない。
 
 注意:
 - 往復チケットの場合は往路と復路の 2 件に分割する
@@ -52,6 +54,15 @@ const TOOL: Anthropic.Tool = {
               type: ["string", "null"],
               description: "開始時刻。HH:MM (24時間制)。不明なら null。",
             },
+            end_date: {
+              type: ["string", "null"],
+              description:
+                "終了日。YYYY-MM-DD 形式。開始日と同じか不明なら null (宿泊など日付が変わる場合のみ設定)。",
+            },
+            end_time: {
+              type: ["string", "null"],
+              description: "終了時刻 (到着時刻等)。HH:MM (24時間制)。不明なら null。",
+            },
             location: {
               type: ["string", "null"],
               description:
@@ -75,6 +86,8 @@ type Parsed = {
   title: string;
   day: string;
   start_time: string | null;
+  end_date: string | null;
+  end_time: string | null;
   location: string | null;
   memo: string | null;
 };

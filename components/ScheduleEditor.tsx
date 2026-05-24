@@ -12,7 +12,7 @@ import {
   deleteScheduleItem,
   updateScheduleItem,
 } from "@/app/trip/[slug]/actions";
-import { formatDateJa, formatTime } from "@/lib/date";
+import { formatDateJa, formatEnd, formatTime } from "@/lib/date";
 import CommentSection from "./CommentSection";
 import LocationMap from "./LocationMap";
 
@@ -37,7 +37,6 @@ export default function ScheduleEditor({
 }: Props) {
   const grouped = groupByDay(items, days);
 
-  // 予定ID -> その予定の参加メンバーID集合
   const participantMap = useMemo(() => {
     const m = new Map<string, Set<string>>();
     for (const p of participants) {
@@ -47,7 +46,6 @@ export default function ScheduleEditor({
     return m;
   }, [participants]);
 
-  // 現在ユーザーの member_id (新規作成時のデフォルト選択用)
   const currentMemberId = useMemo(
     () => members.find((m) => m.name === currentAuthorName)?.id ?? null,
     [members, currentAuthorName]
@@ -162,6 +160,8 @@ function ScheduleRow({
     selectedMemberIds.has(m.id)
   );
 
+  const endText = formatEnd(item.day, item.end_date, item.end_time);
+
   const onDelete = () => {
     if (!confirm(`「${item.title}」を削除しますか？`)) return;
     startTransition(async () => {
@@ -218,7 +218,14 @@ function ScheduleRow({
           {formatTime(item.start_time) || "--:--"}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-medium text-gray-900">{item.title}</span>
+          <span className="block font-medium text-gray-900">
+            {item.title}
+            {endText && (
+              <span className="ml-2 text-xs font-normal text-gray-500">
+                {endText}
+              </span>
+            )}
+          </span>
           {item.location && (
             <span className="mt-0.5 block text-xs text-gray-500">
               📍 {item.location}
@@ -329,6 +336,8 @@ function AddItemForm({
         item={{
           day: defaultDay,
           start_time: "",
+          end_date: "",
+          end_time: "",
           title: "",
           location: "",
           memo: "",
@@ -352,6 +361,8 @@ function AddItemForm({
 type ItemFieldsData = {
   day: string;
   start_time: string | null;
+  end_date: string | null;
+  end_time: string | null;
   title: string;
   location: string | null;
   memo: string | null;
@@ -387,20 +398,42 @@ function ItemFields({
 
   return (
     <form onSubmit={onSubmit} className="space-y-2">
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          type="date"
-          name="day"
-          defaultValue={item.day}
-          required
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-        />
-        <input
-          type="time"
-          name="start_time"
-          defaultValue={item.start_time ?? ""}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-        />
+      <div>
+        <p className="mb-1 text-xs text-gray-500">開始</p>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            name="day"
+            defaultValue={item.day}
+            required
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            type="time"
+            name="start_time"
+            defaultValue={item.start_time ?? ""}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </div>
+      </div>
+      <div>
+        <p className="mb-1 text-xs text-gray-500">
+          終了 (任意 — 日付は宿泊など日が変わる場合のみ)
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            name="end_date"
+            defaultValue={item.end_date ?? ""}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <input
+            type="time"
+            name="end_time"
+            defaultValue={item.end_time ?? ""}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </div>
       </div>
       <input
         name="title"

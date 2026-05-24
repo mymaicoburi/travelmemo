@@ -13,6 +13,8 @@ export type ScheduleItem = {
   trip_id: string;
   day: string;
   start_time: string | null;
+  end_date: string | null;
+  end_time: string | null;
   title: string;
   location: string | null;
   memo: string | null;

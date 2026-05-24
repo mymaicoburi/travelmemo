@@ -168,25 +168,57 @@ export default function ParseEmailModal({ slug }: { slug: string }) {
                         }
                         className="w-full rounded border border-gray-300 px-2 py-1 text-sm font-medium"
                       />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="date"
-                          value={it.day}
-                          onChange={(e) =>
-                            updateItem(idx, { day: e.target.value })
-                          }
-                          className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
-                        />
-                        <input
-                          type="time"
-                          value={it.start_time ?? ""}
-                          onChange={(e) =>
-                            updateItem(idx, {
-                              start_time: e.target.value || null,
-                            })
-                          }
-                          className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
-                        />
+                      <div>
+                        <p className="mb-0.5 text-[10px] text-gray-500">
+                          開始
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={it.day}
+                            onChange={(e) =>
+                              updateItem(idx, { day: e.target.value })
+                            }
+                            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+                          />
+                          <input
+                            type="time"
+                            value={it.start_time ?? ""}
+                            onChange={(e) =>
+                              updateItem(idx, {
+                                start_time: e.target.value || null,
+                              })
+                            }
+                            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-0.5 text-[10px] text-gray-500">
+                          終了 (任意)
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={it.end_date ?? ""}
+                            onChange={(e) =>
+                              updateItem(idx, {
+                                end_date: e.target.value || null,
+                              })
+                            }
+                            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+                          />
+                          <input
+                            type="time"
+                            value={it.end_time ?? ""}
+                            onChange={(e) =>
+                              updateItem(idx, {
+                                end_time: e.target.value || null,
+                              })
+                            }
+                            className="w-full rounded border border-gray-300 px-2 py-1 text-xs"
+                          />
+                        </div>
                       </div>
                       <input
                         value={it.location ?? ""}

@@ -18,6 +18,8 @@ create table if not exists schedule_items (
   trip_id uuid not null references trips(id) on delete cascade,
   day date not null,
   start_time time,
+  end_date date,
+  end_time time,
   title text not null,
   location text,
   memo text,
