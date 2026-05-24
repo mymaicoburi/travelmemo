@@ -88,7 +88,11 @@ export default async function TripPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <AuthorNameGate slug={tripTyped.slug} initialName={initialAuthor} />
+      <AuthorNameGate
+        slug={tripTyped.slug}
+        initialName={initialAuthor}
+        members={membersTyped}
+      />
       <VisitRecorder slug={tripTyped.slug} title={tripTyped.title} />
 
       <div className="mb-4 flex items-center justify-between text-sm">

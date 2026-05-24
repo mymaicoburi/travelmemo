@@ -2,13 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { setAuthorName } from "@/app/trip/[slug]/actions";
+import type { TripMember } from "@/lib/types";
 
 export default function AuthorNameGate({
   slug,
   initialName,
+  members,
 }: {
   slug: string;
   initialName: string;
+  members: TripMember[];
 }) {
   const [open, setOpen] = useState(!initialName);
   const [name, setName] = useState(initialName);
@@ -16,15 +19,18 @@ export default function AuthorNameGate({
 
   if (!open) return null;
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+  const submitName = (chosen: string) => {
+    if (!chosen.trim()) return;
     startTransition(async () => {
-      await setAuthorName(slug, name.trim());
+      await setAuthorName(slug, chosen.trim());
       setOpen(false);
-      // 反映のため再読み込み
       if (typeof window !== "undefined") window.location.reload();
     });
+  };
+
+  const onTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitName(name);
   };
 
   return (
@@ -34,9 +40,36 @@ export default function AuthorNameGate({
         <p className="mb-4 text-sm text-gray-600">
           コメントや予定の投稿者として表示されます。
         </p>
-        <form onSubmit={submit} className="space-y-3">
+
+        {members.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-1.5 text-xs text-gray-500">
+              他の端末から続ける場合は、自分の名前をタップしてください
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {members.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => submitName(m.name)}
+                  className="rounded-full border border-brand bg-white px-3 py-1 text-sm text-brand hover:bg-brand/5 disabled:opacity-50"
+                >
+                  {m.name}
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
+              <span className="h-px flex-1 bg-gray-200" />
+              または新しく登録
+              <span className="h-px flex-1 bg-gray-200" />
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={onTextSubmit} className="space-y-3">
           <input
-            autoFocus
+            autoFocus={members.length === 0}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="例: とうさん"
