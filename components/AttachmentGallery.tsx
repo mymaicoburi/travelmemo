@@ -8,6 +8,7 @@ import {
 } from "@/app/trip/[slug]/actions";
 import { getAttachmentUrl } from "@/lib/storage";
 import { compressImage } from "@/lib/image";
+import { useAuthor } from "./AuthorNameGate";
 
 const MAX_FILES_PER_UPLOAD = 10;
 
@@ -25,9 +26,13 @@ export default function AttachmentGallery({
   const [progress, setProgress] = useState(0); // 0..1
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<Attachment | null>(null);
+  const { requireAuthorName } = useAuthor();
   const [, startTransition] = useTransition();
 
-  const onPick = () => inputRef.current?.click();
+  const onPick = () => {
+    if (!requireAuthorName()) return;
+    inputRef.current?.click();
+  };
 
   const onFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);

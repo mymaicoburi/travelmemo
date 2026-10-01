@@ -17,6 +17,7 @@ import { formatDateJa, formatEnd, formatTime } from "@/lib/date";
 import CommentSection from "./CommentSection";
 import LocationMap from "./LocationMap";
 import AttachmentGallery from "./AttachmentGallery";
+import { useAuthor } from "./AuthorNameGate";
 
 type Props = {
   slug: string;
@@ -26,7 +27,6 @@ type Props = {
   members: TripMember[];
   participants: ScheduleParticipant[];
   attachments: Attachment[];
-  currentAuthorName: string;
 };
 
 export default function ScheduleEditor({
@@ -37,8 +37,8 @@ export default function ScheduleEditor({
   members,
   participants,
   attachments,
-  currentAuthorName,
 }: Props) {
+  const { authorName } = useAuthor();
   const grouped = groupByDay(items, days);
 
   const participantMap = useMemo(() => {
@@ -60,8 +60,8 @@ export default function ScheduleEditor({
   }, [attachments]);
 
   const currentMemberId = useMemo(
-    () => members.find((m) => m.name === currentAuthorName)?.id ?? null,
-    [members, currentAuthorName]
+    () => members.find((m) => m.name === authorName)?.id ?? null,
+    [members, authorName]
   );
 
   return (
@@ -321,13 +321,20 @@ function AddItemForm({
   members: TripMember[];
   defaultSelectedMemberId: string | null;
 }) {
+  const { requireAuthorName } = useAuthor();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const handleOpen = () => {
+    if (!requireAuthorName()) return;
+    setOpen(true);
+  };
 
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        type="button"
+        onClick={handleOpen}
         className="mt-4 w-full rounded-2xl border-2 border-dashed border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-600 hover:border-brand hover:text-brand"
       >
         ＋ 予定を追加

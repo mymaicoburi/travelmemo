@@ -11,7 +11,7 @@ import type {
   Attachment,
 } from "@/lib/types";
 import { enumerateDates, formatRange } from "@/lib/date";
-import AuthorNameGate from "@/components/AuthorNameGate";
+import { AuthorProvider } from "@/components/AuthorNameGate";
 import TripHeader from "@/components/TripHeader";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import CommentSection from "@/components/CommentSection";
@@ -95,49 +95,49 @@ export default async function TripPage({ params }: Props) {
     : "";
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6">
-      <AuthorNameGate
-        slug={tripTyped.slug}
-        initialName={initialAuthor}
-        members={membersTyped}
-      />
-      <VisitRecorder slug={tripTyped.slug} title={tripTyped.title} />
+    <AuthorProvider
+      slug={tripTyped.slug}
+      initialName={initialAuthor}
+      members={membersTyped}
+    >
+      <main className="mx-auto max-w-2xl px-4 py-6">
+        <VisitRecorder slug={tripTyped.slug} title={tripTyped.title} />
 
-      <div className="mb-4 flex items-center justify-between text-sm">
-        <Link href="/" className="text-gray-500 hover:underline">
-          ← トップ
-        </Link>
-        <span className="text-gray-400">
-          {formatRange(tripTyped.start_date, tripTyped.end_date)}
-        </span>
-      </div>
+        <div className="mb-4 flex items-center justify-between text-sm">
+          <Link href="/" className="text-gray-500 hover:underline">
+            ← トップ
+          </Link>
+          <span className="text-gray-400">
+            {formatRange(tripTyped.start_date, tripTyped.end_date)}
+          </span>
+        </div>
 
-      <TripHeader trip={tripTyped} members={membersTyped} />
+        <TripHeader trip={tripTyped} members={membersTyped} />
 
-      <ParseEmailModal slug={tripTyped.slug} />
+        <ParseEmailModal slug={tripTyped.slug} />
 
-      <ScheduleEditor
-        slug={tripTyped.slug}
-        days={days}
-        items={itemsTyped}
-        comments={commentsTyped}
-        members={membersTyped}
-        participants={participantsTyped}
-        attachments={attachmentsTyped}
-        currentAuthorName={initialAuthor}
-      />
-
-      <section className="mt-8">
-        <h2 className="mb-2 text-sm font-medium text-gray-500">
-          みんなのコメント (旅行全体)
-        </h2>
-        <CommentSection
+        <ScheduleEditor
           slug={tripTyped.slug}
-          scheduleItemId={null}
-          comments={commentsTyped.filter((c) => c.schedule_item_id === null)}
+          days={days}
+          items={itemsTyped}
+          comments={commentsTyped}
+          members={membersTyped}
+          participants={participantsTyped}
+          attachments={attachmentsTyped}
         />
-      </section>
-    </main>
+
+        <section className="mt-8">
+          <h2 className="mb-2 text-sm font-medium text-gray-500">
+            みんなのコメント (旅行全体)
+          </h2>
+          <CommentSection
+            slug={tripTyped.slug}
+            scheduleItemId={null}
+            comments={commentsTyped.filter((c) => c.schedule_item_id === null)}
+          />
+        </section>
+      </main>
+    </AuthorProvider>
   );
 }
 

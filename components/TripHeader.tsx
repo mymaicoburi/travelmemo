@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { Trip, TripMember } from "@/lib/types";
 import { updateTrip } from "@/app/trip/[slug]/actions";
+import { useAuthor } from "./AuthorNameGate";
 
 export default function TripHeader({
   trip,
@@ -11,6 +12,7 @@ export default function TripHeader({
   trip: Trip;
   members: TripMember[];
 }) {
+  const { authorName, openNameModal } = useAuthor();
   const [editing, setEditing] = useState(false);
   const [shared, setShared] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -48,19 +50,42 @@ export default function TripHeader({
           {trip.destination && (
             <p className="mt-1 text-sm text-gray-600">📍 {trip.destination}</p>
           )}
-          {members.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-gray-500">メンバー:</span>
-              {members.map((m) => (
-                <span
-                  key={m.id}
-                  className="rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand"
-                >
-                  {m.name}
-                </span>
-              ))}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-2.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {members.length > 0 ? (
+                <>
+                  <span className="text-xs text-gray-500">メンバー:</span>
+                  {members.map((m) => (
+                    <span
+                      key={m.id}
+                      className="rounded-full bg-brand/10 px-2 py-0.5 text-xs text-brand"
+                    >
+                      {m.name}
+                    </span>
+                  ))}
+                </>
+              ) : (
+                <span className="text-xs text-gray-400">メンバー未登録</span>
+              )}
             </div>
-          )}
+            {authorName ? (
+              <button
+                type="button"
+                onClick={openNameModal}
+                className="text-xs text-gray-500 hover:text-brand"
+              >
+                👤 <span className="font-medium text-gray-700">{authorName}</span> (変更)
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openNameModal}
+                className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs text-gray-600 hover:border-brand hover:text-brand"
+              >
+                👤 お名前を設定
+              </button>
+            )}
+          </div>
           <div className="mt-4 flex gap-2">
             <button
               onClick={copyUrl}

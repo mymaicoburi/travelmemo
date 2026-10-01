@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { Comment } from "@/lib/types";
 import { addComment, deleteComment } from "@/app/trip/[slug]/actions";
+import { useAuthor } from "./AuthorNameGate";
 
 export default function CommentSection({
   slug,
@@ -15,12 +16,14 @@ export default function CommentSection({
   comments: Comment[];
   compact?: boolean;
 }) {
+  const { requireAuthorName } = useAuthor();
   const [body, setBody] = useState("");
   const [pending, startTransition] = useTransition();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!body.trim()) return;
+    if (!requireAuthorName()) return;
     startTransition(async () => {
       try {
         await addComment(slug, scheduleItemId, body);

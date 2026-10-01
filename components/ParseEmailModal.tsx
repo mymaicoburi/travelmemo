@@ -5,6 +5,7 @@ import {
   addParsedReservations,
   type ParsedReservation,
 } from "@/app/trip/[slug]/actions";
+import { useAuthor } from "./AuthorNameGate";
 
 type Phase = "input" | "loading" | "review" | "saving";
 
@@ -84,10 +85,18 @@ export default function ParseEmailModal({ slug }: { slug: string }) {
     });
   };
 
+  const { requireAuthorName } = useAuthor();
+
+  const handleOpen = () => {
+    if (!requireAuthorName()) return;
+    setOpen(true);
+  };
+
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        type="button"
+        onClick={handleOpen}
         className="mt-3 w-full rounded-2xl border-2 border-dashed border-brand/40 bg-white px-4 py-3 text-sm font-medium text-brand hover:bg-brand/5"
       >
         ✉️ 予約メールから取り込む
