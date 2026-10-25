@@ -87,7 +87,6 @@ Group travel in the real world is dynamic and multi-track. Pre-trip schedules ra
 +-------------------------------------------------------------+
 |                   SUPPORTING ENHANCEMENTS                   |
 |  - Location Enhancements (Google Maps links, Places Autocomplete) |
-|  - Pre-Trip Ingestion (AI Reservation Email Parser)         |
 |  - Contextual Attachments (Photos, Reference Comments)      |
 +-------------------------------------------------------------+
 ```
@@ -100,8 +99,8 @@ Group travel in the real world is dynamic and multi-track. Pre-trip schedules ra
 
 ### Supporting Capabilities (Enhancements, Not Core Value)
 - **Location Enhancements:** Google Maps embed/links and Google Places autocomplete improve pin accuracy, but plain location text remains the baseline.
-- **Pre-Trip Ingestion:** AI reservation parsing speeds up initial data entry, but does not solve live on-the-ground synchronization.
 - **Contextual Attachments:** Lightweight photos and reference comments per card provide supplemental context.
+*(Note: Automated AI reservation parsing was evaluated and intentionally removed from the public MVP to keep the product simple, low-cost, and private).*
 
 ---
 

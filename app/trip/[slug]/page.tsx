@@ -16,7 +16,6 @@ import TripHeader from "@/components/TripHeader";
 import ScheduleEditor from "@/components/ScheduleEditor";
 import CommentSection from "@/components/CommentSection";
 import VisitRecorder from "@/components/VisitRecorder";
-import ParseEmailModal from "@/components/ParseEmailModal";
 import { ensureCurrentMember } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -113,8 +112,6 @@ export default async function TripPage({ params }: Props) {
         </div>
 
         <TripHeader trip={tripTyped} members={membersTyped} />
-
-        <ParseEmailModal slug={tripTyped.slug} />
 
         <ScheduleEditor
           slug={tripTyped.slug}
