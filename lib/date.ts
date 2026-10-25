@@ -60,3 +60,27 @@ export function formatEnd(
   const datePart = formatShortDate(endDate);
   return endTime ? `→ ${datePart} ${formatTime(endTime)}` : `→ ${datePart}`;
 }
+
+// クライアントのローカルカレンダー日付を YYYY-MM-DD で取得する
+export function getLocalTodayIso(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// 旅行前/後なら "all"、旅行中なら今日の YYYY-MM-DD を初期タブとして判定する
+export function determineInitialDay(days: string[], today: string): string {
+  if (days.length === 0) return "all";
+  if (days.includes(today)) return today;
+  return "all";
+}
+
+// 日程タブ用の表示ラベル (例: 10/12(土))
+export function formatDayTabLabel(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return iso;
+  const weekday = ["日", "月", "火", "水", "木", "金", "土"][d.getDay()];
+  return `${d.getMonth() + 1}/${d.getDate()}(${weekday})`;
+}

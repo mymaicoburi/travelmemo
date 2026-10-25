@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type {
   ScheduleItem,
   Comment,
@@ -13,7 +13,14 @@ import {
   deleteScheduleItem,
   updateScheduleItem,
 } from "@/app/trip/[slug]/actions";
-import { formatDateJa, formatEnd, formatTime } from "@/lib/date";
+import {
+  formatDateJa,
+  formatEnd,
+  formatTime,
+  getLocalTodayIso,
+  determineInitialDay,
+  formatDayTabLabel,
+} from "@/lib/date";
 import CommentSection from "./CommentSection";
 import LocationMap from "./LocationMap";
 import AttachmentGallery from "./AttachmentGallery";
@@ -39,6 +46,31 @@ export default function ScheduleEditor({
   attachments,
 }: Props) {
   const { authorName } = useAuthor();
+  const [selectedDay, setSelectedDay] = useState<string>("all");
+  const [todayIso, setTodayIso] = useState<string>("");
+  const initializedRef = useRef(false);
+  const lastSlugRef = useRef(slug);
+
+  useEffect(() => {
+    const today = getLocalTodayIso();
+    setTodayIso(today);
+    if (!initializedRef.current || lastSlugRef.current !== slug) {
+      initializedRef.current = true;
+      lastSlugRef.current = slug;
+      setSelectedDay(determineInitialDay(days, today));
+    } else if (selectedDay !== "all" && !days.includes(selectedDay)) {
+      setSelectedDay("all");
+    }
+  }, [days, slug, selectedDay]);
+
+  const activeDay =
+    selectedDay === "all" || days.includes(selectedDay)
+      ? selectedDay
+      : "all";
+
+  const formDefaultDay =
+    activeDay !== "all" && days.includes(activeDay) ? activeDay : (days[0] ?? "");
+
   const grouped = groupByDay(items, days);
 
   const participantMap = useMemo(() => {
@@ -66,7 +98,47 @@ export default function ScheduleEditor({
 
   return (
     <section className="mt-6">
-      <h2 className="mb-3 text-base font-semibold text-gray-800">日程</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-base font-semibold text-gray-800">日程</h2>
+      </div>
+
+      {days.length > 1 && (
+        <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => setSelectedDay("all")}
+            className={
+              "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors " +
+              (activeDay === "all"
+                ? "bg-brand text-white shadow-sm"
+                : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50")
+            }
+          >
+            すべて
+          </button>
+          {days.map((day) => {
+            const isToday = day === todayIso;
+            const isSelected = activeDay === day;
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => setSelectedDay(day)}
+                className={
+                  "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors " +
+                  (isSelected
+                    ? "bg-brand text-white shadow-sm"
+                    : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50")
+                }
+              >
+                {formatDayTabLabel(day)}
+                {isToday ? " (今日)" : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="space-y-4">
         {grouped.length === 0 && (
           <p className="rounded-lg border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500">
@@ -74,23 +146,27 @@ export default function ScheduleEditor({
             下のフォームから追加するか、上の「編集」から日付を設定してください。
           </p>
         )}
-        {grouped.map(({ day, dayItems }) => (
-          <DaySection
-            key={day}
-            slug={slug}
-            day={day}
-            items={dayItems}
-            comments={comments}
-            members={members}
-            participantMap={participantMap}
-            attachmentMap={attachmentMap}
-          />
-        ))}
+        {grouped.map(({ day, dayItems }) => {
+          const isHidden = activeDay !== "all" && activeDay !== day;
+          return (
+            <div key={day} className={isHidden ? "hidden" : undefined}>
+              <DaySection
+                slug={slug}
+                day={day}
+                items={dayItems}
+                comments={comments}
+                members={members}
+                participantMap={participantMap}
+                attachmentMap={attachmentMap}
+              />
+            </div>
+          );
+        })}
       </div>
 
       <AddItemForm
         slug={slug}
-        defaultDay={days[0] ?? ""}
+        defaultDay={formDefaultDay}
         members={members}
         defaultSelectedMemberId={currentMemberId}
       />
