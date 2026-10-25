@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { Trip, TripMember } from "@/lib/types";
 import { updateTrip } from "@/app/trip/[slug]/actions";
+import { useAutoRefresh } from "@/lib/useAutoRefresh";
 import { useAuthor } from "./AuthorNameGate";
 
 export default function TripHeader({
@@ -13,6 +14,7 @@ export default function TripHeader({
   members: TripMember[];
 }) {
   const { authorName, openNameModal } = useAuthor();
+  const { refresh, isPending: isRefreshing } = useAutoRefresh();
   const [editing, setEditing] = useState(false);
   const [shared, setShared] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -92,6 +94,16 @@ export default function TripHeader({
               className="flex-1 rounded-lg bg-brand py-2 text-sm font-medium text-white hover:bg-brand-light"
             >
               {shared ? "コピーしました" : "URL を共有する"}
+            </button>
+            <button
+              type="button"
+              onClick={() => refresh(true)}
+              disabled={isRefreshing}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              title="最新の状態に更新"
+              aria-label="最新の状態に更新"
+            >
+              {isRefreshing ? "…" : "↻"}
             </button>
             <button
               onClick={() => setEditing(true)}
